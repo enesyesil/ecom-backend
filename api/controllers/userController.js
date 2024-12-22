@@ -1,4 +1,4 @@
-import { getUserProfileById, updateUserAddress } from 'file:///Users/enesyesil/Documents/GitHub/my-commerce/my-commerce-backend/api/service/userService.js';
+import { getUserProfileById, updateUserAddress } from '../service/userService.js';
 
 export const fetchUserProfile = async (req, res) => {
   try {
