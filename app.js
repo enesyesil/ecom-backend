@@ -15,7 +15,23 @@ import userRoutes from './api/routes/user.js';
 dotenv.config();
 
 const app = express();
-app.use(cors());
+const allowedOrigins = [
+  'https://my-commerce-frontend.vercel.app', // Frontend production URL
+  'http://localhost:3000', // Frontend development URL
+];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true, // Allow credentials (cookies, headers)
+  })
+);
 app.use(express.json());
 
 // Register routes
