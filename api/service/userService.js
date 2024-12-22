@@ -26,9 +26,23 @@ export const getUserProfileById = async (userId) => {
 };
 
 // Update user address
-export const updateUserAddress = async (userId, address) => {
-  return prisma.user.update({
-    where: { id: userId },
-    data: { address },
-  });
+export const updateUserAddress = async (req, res) => {
+  const { address } = req.body;
+  const userId = req.user.id; // Ensure req.user is populated by the middleware
+
+  if (!address) {
+    return res.status(400).json({ message: 'Address is required' });
+  }
+
+  try {
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { address },
+    });
+
+    res.status(200).json({ message: 'Address updated successfully', address: updatedUser.address });
+  } catch (error) {
+    console.error('Error updating address:', error);
+    res.status(500).json({ message: 'Failed to update address', error: error.message });
+  }
 };

@@ -22,38 +22,35 @@ export const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Find user by email
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Compare passwords
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token
     const token = jwt.sign(
-      { id: user.id, role: user.role }, // Include user role
+      { id: user.id, role: user.role || 'user' }, // Ensure default role if undefined
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
 
-    // Set HTTP-only cookie
     res.cookie('token', token, {
-      httpOnly: true, // Prevent access via JavaScript
-      secure: process.env.NODE_ENV === 'production', // Use secure cookies in production
-      sameSite: 'strict', // Prevent CSRF
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
       maxAge: 3600000, // 1 hour
     });
 
-    res.status(200).json({ message: 'Login successful' });
+    res.status(200).json({ message: 'Login successful', user: { id: user.id, email: user.email, role: user.role } });
   } catch (error) {
     res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 };
+
 
 export const logout = (req, res) => {
   res.clearCookie('token', {
@@ -66,7 +63,7 @@ export const logout = (req, res) => {
 };
 
 export const verifyAuth = async (req, res) => {
-  const token = req.cookies.token; // Extract token from cookies
+  const token = req.cookies?.token;
 
   if (!token) {
     return res.status(401).json({ message: 'Not authenticated' });
@@ -76,7 +73,8 @@ export const verifyAuth = async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     res.status(200).json({ id: decoded.id, role: decoded.role });
   } catch (error) {
-    res.status(403).json({ message: 'Invalid or expired token' });
+    const message = error.name === 'TokenExpiredError' ? 'Token expired' : 'Invalid token';
+    res.status(403).json({ message });
   }
 };
 
